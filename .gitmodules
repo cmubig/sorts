@@ -1,0 +1,4 @@
+[submodule "policies/social_policies/social-patternn"]
+	path = policies/social_policies/social-patternn
+	url = git@github.com:cmubig/social-patternn.git
+	branch = sorts

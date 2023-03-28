@@ -1,12 +1,12 @@
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
 # @file:    gym.py
 # @brief:   Environment implementation. 
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
 import numpy as np
 import torch
 import os
 
-import utils.trajair_utils as tu
+import utils.common as utils
 
 from logging import Logger
 from typing import List, Tuple
@@ -14,7 +14,7 @@ from utils.common import Config
 from utils.cost_maps import CostMap
 from utils.visual import Visual
 
-from utils.trajair_utils import goal_enum
+from utils.common import goal_enum
 from utils.cost_maps import RUNWAY_ID, X_MIN, X_MAX, Y_MIN, Y_MAX
 
 from gym.agent import Agent
@@ -42,17 +42,17 @@ class Gym:
     
         traj_lib_file = self.config.DATA.trajlib_path
         self.logger.info(f"Setting up action space from: {traj_lib_file}")
-        self.traj_lib, self.index_lib = tu.load_action_space(
+        self.traj_lib, self.index_lib = utils.load_action_space(
             traj_lib_file, self.config.DATA.indexlib_path)
         
         reflib_file = self.config.DATA.reflib_path
         self.logger.info(f"Getting reference trajectory from: {reflib_file}")
-        self.ref_traj = tu.get_ref_exp_traj(reflib_file)
+        self.ref_traj = utils.get_ref_exp_traj(reflib_file)
         
         costmap_path = self.config.DATA.costmap_path
         self.logger.info(f"Creating costmap from: {costmap_path}")
         self.costmap = CostMap(costmap_path)
-        self.goal_list = tu.goal_eucledian_list()
+        self.goal_list = utils.goal_eucledian_list()
         
         self.hh = []
 
@@ -61,10 +61,10 @@ class Gym:
 
         super().__init__()
 
-    from gym.start import reset, compute_random_goal, compute_random_start, compute_valid_start_goal, spawn_agents
+    from gym.start import spawn_agents, create_valid_spawn, create_random_goal, create_random_start
+    from gym.mechanics import is_done, get_all_next_states, get_next_state, is_valid, is_state_space_valid
+    from gym.multiagent import split_agents, take_turn, active_agents, next_agent, is_multi_valid, check_valid
     from gym.heuristic import get_heuristic_downwind
-    from gym.mechanics import get_all_next_states, get_next_state, is_valid, is_done, is_state_space_valid
-    from gym.multiagent import split_agents, take_turn, active_agents, next_agent, game_done, is_multi_valid
 
     @property
     def name(self) -> str:
@@ -73,6 +73,11 @@ class Gym:
     @property
     def action_size(self) -> int:
         return self.traj_lib.shape[0]
+    
+    def reset(self) -> None:
+        """ Reset environment and visuals. """
+        self.hh = []
+        self.visual.reset()
 
     def get_state_hash(self, agents: List[Agent], sim: bool = True) -> str:
         """ Compute a state key for the current agent. 
@@ -88,10 +93,6 @@ class Gym:
         """
         # there's only one active agent
         if self.active_agents(agents) == 1:
-            # for agent in agents:
-            #     if not agent.done:
-            #         agent_id = agent.id
-            #         break
             i = self.playing[0]
             x, y, _ = agents[i].get_location(sim)
             return f'{x}_{y}'
@@ -102,9 +103,9 @@ class Gym:
         xj, yj, _ = agents[j].get_location(sim)
         return f'{xi}_{yi}_{xj}_{yj}'
     
-    def show_world(self, agents: List[Agent], show: bool = False, show_tree: bool = False) -> None:
+    def show_world(self, agents: List[Agent], show: bool = False, show_tree: bool = False, agent_id = None) -> None:
         self.visual.reset()
-        self.visual.plot(agents, show=show, show_tree=show_tree, pause=1.0)
+        self.visual.plot(agents, show=show, show_tree=show_tree, agent_id=agent_id)
     
     def save(self, num_episode: int) -> None:
         self.visual.save(num_episode)

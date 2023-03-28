@@ -1,0 +1,57 @@
+{
+    "log_file": "output.log",
+    "out_dir": "./out",
+    "sub_dirs": ["plots", "traj"],
+    "gpu": true,
+    "gpu_id": 0,
+
+    "seed": 1, 
+    
+    "game": {
+        "num_episodes": 100, 
+        "max_steps": 100,
+        "num_agents": 4,
+        "deterministic": true
+    },
+
+    "planner_policy": {
+        "type": "baseline",
+        "setting": "multiagent",
+        "lmbd": 0.4
+    },
+
+    "social_policy": {
+        "type": "sprnn",
+        "num_predictions": 10,
+        "model_config_path": "./data/sprnn/config.json",
+        "model_path": "./data/sprnn/model.pth"
+    },
+
+    "metrics": {
+        "list": [
+            "Steps", 
+            "MaxStepsReached", 
+            "Success", 
+            "Offtrack",
+            "ReferenceError", 
+            "LossOfSeparation_Collision",
+            "LossOfSeparation_ClosestDistance",
+            "LossOfSeparation_Frames"
+        ],
+        "collision_threshold": 0.5,
+        "loss_of_separation_threshold": 0.5
+    },
+
+    "data": {
+        "dataset_path": "./data/dataset",
+        "dataset_name": "111_days",
+        "trajlib_path": "./data/traj_lib_0SI.txt",
+        "indexlib_path": "./data/traj_index_0SI.txt",
+        "reflib_path": "./data/dic2d.pkl",
+        "costmap_path": "./data/dataset/111days1/train"
+    },
+
+    "visualization": {
+        "visualize": true
+    }
+}

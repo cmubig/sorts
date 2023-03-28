@@ -5,41 +5,54 @@
 import numpy as np
 import time
 import torch 
-
 from math import sqrt
 from typing import List
 
-from utils.common import Config, EPS
 from gym.gym import Gym, Agent
+from policies.planner_policies.planner import Planner
+from utils.common import Config, EPS
 
-class MCTS:
+class MCTS(Planner):
     """ Monte Carlo Tree Search algorithm. """
-    def __init__(self, config: Config, gym: Gym) -> None:
+    def __init__(self, config: Config, gym: Gym, logger) -> None:
         """ Intializes MCTS. 
         
         Inputs
         ------
             config[dict]: dictionary with configuration parameters. 
             gym[Gym]: the environment. 
+            logger[logging]: output logger.
         """
+        super().__init__(config=config, gym=gym, logger=logger)
 
-        self.gym = gym 
-        self.config = config
-        super().__init__()
+    # ----------------------------------------------------------------------------------------------
+    # Planner-specific methods 
+    # ----------------------------------------------------------------------------------------------
+    def reset(self) -> None:
+        self.Q_sa = {}
+        self.N_sa = {}
+        self.N_s = {}
+        self.P_s = {}
+        self.E_s = {}
+        self.V_s = {}
+        self.H_s = {}
+        self.H_sa = {}
 
-        self.c_uct = self.config.SEARCH_POLICY.c_uct
-        self.h_uct = self.config.SEARCH_POLICY.h_uct
+    def setup(self) -> None:
+        """ Sets up the planner. """
+        self.c_uct = self.config.PLANNER_POLICY.c_uct
+        self.h_uct = self.config.PLANNER_POLICY.h_uct
         
         self.device = torch.device('cpu')
         if self.config.MAIN.gpu and torch.cuda.is_available():
             self.device = torch.device(f'cuda:{self.config.MAIN.gpu_id}')
 
-        if self.config.SOCIAL_POLICY.type == "random":
-            from game.social_policies.random_predictor import RandomPredictor
-            self.soc_policy = RandomPredictor(self.config)
+        elif self.config.SOCIAL_POLICY.type == "sprnn":
+            from policies.social_policies.sprnn_predictor import SprnnPolicy
+            self.soc_policy = SprnnPolicy(self.config, self.logger, self.device)
         else: 
             raise NotImplementedError(f"Policy {self.config.SOCIAL_POLICY.type} not implemented!")
-            
+        
         # stores Q values for state, action (s, a), as defined in the paper
         self.Q_sa = {}
         
@@ -63,8 +76,8 @@ class MCTS:
         
         # stores heuristic value for (s, a)
         self.H_sa = {}
-        
-    def get_action_probabilities(self, agents: List[Agent], current_agent: int = 0):
+
+    def compute_action_probabilities(self, agents: List[Agent], current_agent: int = 0):
         """ Runs tree search simulations for a given time or number of simulations, and computes the 
         action probabilities based on the state visitation count computed via the simulations. 
         
@@ -80,14 +93,19 @@ class MCTS:
         start_time = time.time()
 
         # time-based search
-        if self.config.SEARCH_POLICY.search == "time":
-            while (time.time() - start_time) < self.config.SEARCH_POLICY.max_time:
+        if self.config.PLANNER_POLICY.search == "time":
+            while (time.time() - start_time) < self.config.PLANNER_POLICY.max_time:
                 self.search(agents, current_agent=current_agent)
+                
+                # reset state and tree for next expansion ?
+                agents[current_agent].set_state(agents[current_agent].trajectory[-1])
+                agents[current_agent].add_tree()
+
         # tree expansions-based search
         else:
-            for _ in range(self.config.SEARCH_POLICY.num_ts):
-                
+            for t in range(self.config.PLANNER_POLICY.num_ts):
                 self.search(agents, current_agent=current_agent)
+                
                 # reset state and tree for next expansion ?
                 agents[current_agent].set_state(agents[current_agent].trajectory[-1])
                 agents[current_agent].add_tree()
@@ -101,6 +119,9 @@ class MCTS:
         counts_sum = float(sum(counts))
         if int(counts_sum) != 0:
             return [x / counts_sum for x in counts]
+        
+        if self.config.VISUALIZATION.visualize:
+            self.gym.show_world(agents, show_tree=True)
         
         return np.ones_like(counts) / self.gym.action_size
         
@@ -135,11 +156,11 @@ class MCTS:
             v_s = self.gym.get_cost(agents)
 
             self.N_s[state] = 0
-            self.P_s[state] = self.soc_policy.get_social_action(agents, S)
-        
-            if self.config.VISUALIZATION.visualize:
-                self.gym.show_world(agents=agents, show_tree=True)
-                
+            self.P_s[state] = self.soc_policy.compute_social_action(agents, S, current_agent) 
+
+            # if self.config.VISUALIZATION.visualize:
+            #     self.gym.show_world(agents, show_tree=True, agent_id=current_agent)
+            
             return v_s, heuristic
         
         current_best = -float('inf')
@@ -155,9 +176,14 @@ class MCTS:
             if S_valid[action]:
                 if (state, action) in self.Q_sa:
                     n = sqrt(self.N_s[state]) / (1 + self.N_sa[(state, action)])
-                    uct = self.Q_sa[(state, action)] + self.c_uct * self.P_s[state][action] * n + self.h_uct * self.H_sa[(state, action)]
+                    uct = (
+                        self.Q_sa[(state, action)] 
+                        + self.c_uct * self.P_s[state][action] * n 
+                        + self.h_uct * self.H_sa[(state, action)])
                 else:
-                    uct = self.c_uct * self.P_s[state][action] * sqrt(self.N_s[state] + EPS) + self.h_uct * heuristic[action]
+                    uct = (
+                        self.c_uct * self.P_s[state][action] * sqrt(self.N_s[state] + EPS) 
+                        + self.h_uct * heuristic[action])
                 
                 if uct > current_best:
                     current_best = uct 
@@ -174,13 +200,13 @@ class MCTS:
 
         if (state, action) in self.Q_sa:
             self.Q_sa[(state, action)] = (
-                self.N_sa[(state, action)] * self.Q_sa[(state, action)] 
-                + v) / (self.N_sa[(state, action)] + 1)
+                (self.N_sa[(state, action)] * self.Q_sa[(state, action)] 
+                 + v) / (self.N_sa[(state, action)] + 1))
             
             self.N_sa[(state, action)] += 1
             self.H_sa[(state, action)] = (
-                self.N_sa[(state, action)] * self.H_sa[(state, action)] 
-                + h) / (self.N_sa[(state, action)] + 1)
+                (self.N_sa[(state, action)] * self.H_sa[(state, action)] 
+                 + h) / (self.N_sa[(state, action)] + 1))
         else:
             self.Q_sa[(state, action)] = v
             self.N_sa[(state, action)] = 1
@@ -188,13 +214,3 @@ class MCTS:
 
         self.N_s[state] += 1
         return v, h
-
-    def reset(self) -> None:
-        self.Q_sa = {}
-        self.N_sa = {}
-        self.N_s = {}
-        self.P_s = {}
-        self.E_s = {}
-        self.V_s = {}
-        self.H_s = {}
-        self.H_sa = {}

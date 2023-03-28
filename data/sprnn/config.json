@@ -1,0 +1,85 @@
+{
+	"trainer": "socpatternn-mlp",
+	"coord": "abs",
+
+	"gpu_id": 0,
+	"use_cpu": false,
+
+	"pat_len": 8,
+	"pred_len": 20,
+	"fut_len": 50, 
+	"step": 2,
+	
+	"model_design": {
+		"dim": 3,
+		"scale": 1.0, 
+		"feat_enc_x": {
+			"in_size": 3,
+			"hidden_size": [96],
+			"out_size": 96,
+			"dropout": 0.0,
+			"layer_norm": false
+		},
+		"encoder": {
+			"in_size": 288,
+			"hidden_size": [96],
+			"out_size": 48,
+			"dropout": 0.0,
+			"layer_norm": false
+		},
+		"prior": {
+			"in_size": 96,
+			"hidden_size": [96],
+			"out_size": 48,
+			"dropout": 0.0,
+			"layer_norm": false
+		},
+		"feat_enc_z": {
+			"in_size": 24,
+			"hidden_size": [96],
+			"out_size": 96,
+			"dropout": 0.0,
+			"layer_norm": false
+		},
+		"decoder": {
+			"in_size": 384,
+			"hidden_size": [96],
+			"out_size": 6,
+			"dropout": 0.0,
+			"layer_norm": false
+		},
+		"rnn": {
+			"in_size": 192,
+			"hidden_size": 96,
+			"num_layers": 2
+		},
+		"pattern_net": {
+			"pat_len": 7,
+			"feat_pat": {
+				"in_size": -1,
+                "hidden_size": [96],
+                "out_size": 96,
+                "dropout": 0.0,
+                "layer_norm": false
+			},
+			"dec_pat": {
+				"in_size": 141,
+                "hidden_size": [96],
+                "out_size": -1,
+                "dropout": 0.0,
+                "layer_norm": false
+			}
+		},
+		"interaction_net": {
+			"type": "mlp",
+			"k_nearest": 8,
+            "feat_soc": {
+                "in_size": 24,
+                "hidden_size": [96],
+                "out_size": 96,
+                "dropout": 0.0,
+                "layer_norm": false
+            }
+		}
+	}
+}

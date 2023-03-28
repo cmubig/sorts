@@ -10,7 +10,7 @@ from typing import List
 from utils.common import Config
 from gym.gym import Agent
 
-class RandomPredictor:
+class RandomPolicy:
     """ Implements a random probability distribution predictor. """
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -18,7 +18,7 @@ class RandomPredictor:
         self.num_predictions = self.config.SOCIAL_POLICY["num_predictions"]
         super().__init__()
         
-    def get_social_action(self, agents: List[Agent], S: np.array):
+    def compute_social_action(self, agents: List[Agent], S: np.array, current_agent: int):
         """ Obtains actions probablities using random sampling.
         
         Inputs

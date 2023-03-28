@@ -4,23 +4,31 @@
 # --------------------------------------------------------------------------------------------------
 import numpy as np
 import torch
-
 from scipy.spatial.transform import Rotation as R
 from typing import List
 
 from gym.agent import Agent
-from utils.common import LOSS_OF_SEPARATION_THRESH
-from utils.trajair_utils import direction_goal_detect
+from utils.common import direction_goal_detect
 
 def is_done(self, agents: Agent, current_agent: int) -> bool:
-    """ Checks if agent is done"""
-     
+    """ Checks if agent is done. 
+    
+    Inputs
+    ------
+    agents[Agent]: list of agents in the episode.
+    current_agent[int]: ID of the current playing agent. 
+
+
+    Outputs
+    -------
+    valid[int]: the validity of the state: -1 collision, 1: done, 0: not done.
+    dir[float]: the direction of the state.
+    """
     # Check if agents are colliding
     if self.active_agents(agents) > 1 and not self.is_valid(agents):
         return -1, None
 
-    state = agents[current_agent].state
-    goal = agents[current_agent].goal_state
+    state, goal = agents[current_agent].state, agents[current_agent].goal_state
     for t in range(self.dir_start, state.shape[0]):
         s_dir = direction_goal_detect(state[t], state[t-1])
         if (s_dir == goal).all():
@@ -47,7 +55,7 @@ def is_valid(self, agents: List[Agent]) -> bool:
     state_i, state_j = agents[i].state, agents[j].state
 
     difference = state_i[:, :2] - state_j[:, :2]
-    collision_mask = np.linalg.norm(difference, axis=1) > LOSS_OF_SEPARATION_THRESH
+    collision_mask = np.linalg.norm(difference, axis=1) > self.config.METRICS.collision_threshold
     return np.all(collision_mask)
 
 def is_state_space_valid(self, states: np.array, agents: List[Agent], current_agent: int):
@@ -75,7 +83,7 @@ def is_state_space_valid(self, states: np.array, agents: List[Agent], current_ag
         # check if any of the playing agent's possible state are in collision with the other agent's
         # current state
         difference = states[:, :, :2] - states_other[:, :, :2]
-        collision_mask = np.linalg.norm(difference, axis=1) > LOSS_OF_SEPARATION_THRESH
+        collision_mask = np.linalg.norm(difference, axis=1) > self.config.METRICS.collision_threshold
         return np.all(collision_mask, axis=1)
 
 def get_all_next_states(self, agents: List[Agent], agent_id: int):

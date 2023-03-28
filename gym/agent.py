@@ -20,42 +20,39 @@ class Agent:
         self._reference_trajectory = reference_trajectory
         self._color = color
         self._trajectory = [state]
-        self._tree = []
+        self._tree = [self._state]
         self._trees = []
         self._id = agent_id
         self._done = False
 
-        self._steps = 0
+        self._num_steps = 0
         self._success = 0
         self._collision = 0
+        self._offtrack = 0
 
     # ----------------------------------------------------------------------------------------------
-    # Metrics
+    # Members
     # ----------------------------------------------------------------------------------------------
     @property
-    def steps(self) -> int:
-        return self._steps
-    
-    def add_step(self) -> None:
-        self._steps += 1
-    
-    @property
-    def success(self) -> int:
-        return self._success
-    
-    def set_success(self, success) -> None:
-        self._success = success
+    def num_steps(self) -> int:
+        return self._num_steps
     
     @property
     def collision(self) -> int:
         return self._collision
     
-    def set_collision(self, collision) -> None:
-        self._collision = collision
+    @property
+    def offtrack(self) -> int:
+        return self._offtrack
 
-    # ----------------------------------------------------------------------------------------------
-    # Agent properties
-    # ----------------------------------------------------------------------------------------------
+    @property
+    def success(self) -> bool:
+        return self._success
+
+    @property
+    def done(self) -> bool:
+        return self._done    
+
     @property
     def id(self) -> int:
         return self._id
@@ -88,9 +85,11 @@ class Agent:
     def color(self) -> str:
         return self._color 
     
-    @property
-    def done(self) -> bool:
-        return self._done
+    # ----------------------------------------------------------------------------------------------
+    # Member setters
+    # ----------------------------------------------------------------------------------------------
+    def set_collision(self, collision) -> None:
+        self._collision = collision
 
     def set_playing(self, playing) -> None:
         self._playing = playing
@@ -101,18 +100,25 @@ class Agent:
     def set_done(self, done: bool) -> None:
         self._done = done
 
+    def update(self, done: bool, success: int, collision: int, offtrack: int) -> None:
+        self._done = done
+        self._success = success
+        self._collision = collision
+        self._offtrack = offtrack
+
     def add_tree(self) -> None:
         self._trees.append(self._tree)
-        self._tree = []
+        self._tree = [self._state]
 
     def add_tree_state(self, state) -> None:
         self._tree.append(state)
     
-    def update(self, state) -> None:
+    def step(self, state) -> None:
         self._trajectory.append(state)
         self._state = state
         self._tree = []
         self._trees = []
+        self._num_steps += 1
         
     def get_location(self, sim: bool = True, scale: int = 1000) -> tuple:
         """ Get agent's current coordinates. """

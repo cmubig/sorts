@@ -10,8 +10,14 @@ from natsort import natsorted
 
 class Visual:
     def __init__(self, outdir, full_screen: bool = False, background: str = 'white') -> None:
-        """ Initializes the visualizations. """
+        """ Initializes the visualization class. 
         
+        Inputs
+        ------
+            outdir[str]: output directory path.
+            full_screen[bool]: toggles full-screen if True
+            background[str]: sets the color of the background. 
+        """
         self.full_screen = full_screen
         self.background = background
         self.hh = []
@@ -21,11 +27,10 @@ class Visual:
         self.reset()
         
     def reset(self) -> None:
+        """ Resets the visualization radar. """
         self.fig = plt.figure(figsize=(10, 10))
-        self.sp = self.fig.add_subplot(111)
 
-        # plt.ion()
-        # self.fig.show()
+        self.sp = self.fig.add_subplot(111)
         self.sp.set_facecolor(f'xkcd:{self.background}')
         
         self.radar()
@@ -65,40 +70,55 @@ class Visual:
             np.linspace(0, 1.45, 100), np.linspace(0, 0, 100), '--', color="white", lw=1, alpha=1, 
             zorder=10)
     
-    def plot(self, agents, show: bool = False, show_tree: bool = True, pause: float = 1.0) -> None:
+    def plot(self, agents, show: bool = False, show_tree: bool = True, agent_id = None) -> None:
         for agent in agents:
             state = agent.state
             color = agent.color
-            traj = torch.cat(agent.trajectory).numpy()
-            ref = agent.reference_trajectory
+
+            first_state = agent.trajectory[0].numpy()
+            last_state = agent.trajectory[-1].numpy()
+            cur_traj = torch.cat(agent.trajectory).numpy()
+            ref_traj = agent.reference_trajectory
             id_ = agent.id
-
-            # plot first, last (x, y) and trajectory
-            self.sp.plot(ref[:, 0], ref[:, 1] , color=color, linewidth=10, alpha=0.2, zorder=0)
-            self.sp.plot(traj[:, 0], traj[:, 1], color=color, linestyle='-', linewidth=4)
-            self.sp.plot(state[0, 0], state[0, 1], color=color, marker='o', markersize=6)
-            self.sp.plot(state[-1, 0], state[-1, 1], color=color, marker='o', markersize=10)
             
+            alpha, alpha_ref = 0.2, 0.1
+            text = f'A{id_}\n Done!'
+            if not agent.done:
+                alpha, alpha_ref = 1.0, 0.2
+
+                speed = str(int(np.linalg.norm(last_state[-1,:2]-last_state[-2,:2]) * 1943)) + "Knots \n"
+                alt = str(int(last_state[-1, 2] * 3280.84)) + "MSL"
+                text = f'A{id_}\n {speed} {alt}'
+            self.sp.text(first_state[0,0]+0.5, first_state[0,1]+0.5, text, color=color, fontsize=8)
+
+            # reference trajectory 
+            self.sp.plot(ref_traj[:, 0], ref_traj[:, 1] , color=color, linewidth=10, alpha=alpha_ref, zorder=0)
+            
+            # executed trajectory so far:
+            self.sp.plot(cur_traj[:, 0], cur_traj[:, 1], color=color, linestyle='-', linewidth=4, alpha=alpha)
+            
+            # markers for the start and end of last agent's state:
+            self.sp.plot(last_state[0, 0], last_state[0, 1], color=color, marker='o', markersize=6, alpha=alpha)
+            self.sp.plot(last_state[-1, 0], last_state[-1, 1], color=color, marker='o', markersize=10, alpha=alpha)
+
+            # plot tree expansions
             if show_tree and len(agent.tree) > 0:
-                for tree in agent.trees:
+                if not agent_id is None and agent_id == id_:
+                    for tree in agent.trees:
+                        tree = torch.cat(agent.tree).numpy()
+                        self.sp.plot(tree[:, 0], tree[:, 1], color='limegreen', linestyle='-', linewidth=3, markersize=4)
+                
                     tree = torch.cat(agent.tree).numpy()
-                    self.sp.plot(tree[:, 0], tree[:, 1], color='limegreen', linestyle='-', markersize=4)
-                tree = torch.cat(agent.tree).numpy()
-                self.sp.plot(tree[:, 0], tree[:, 1], color='magenta', linestyle='-', markersize=4)
+                    self.sp.plot(tree[:, 0], tree[:, 1], color='magenta', linestyle='-', linewidth=2, markersize=4)
 
-            # self.sp.plot(state[1:, 0], state[1:, 1], color=color, linestyle='-', linewidth=6)
-
-            speed = str(int(np.linalg.norm(state[-1,:2]-state[-2,:2]) * 1943)) + "Knots \n"
-            alt = str(int(state[-1, 2] * 3280.84)) + "MSL"
-            self.sp.text(
-                state[-1,0]+0.5, state[-1,1]+0.5, f'A{id_}\n {speed} {alt}', color=color,fontsize=8)
+                # self.sp.plot(state[:, 0], state[:, 1], color='magenta', linestyle='-', linewidth=6)
 
         if show:
             plt.show()
             plt.waitforbuttonpress()
             # plt.pause(pause)
         else:
-            plt.savefig(f"{self.outdir}/{self.fig_count}.png", bbox_inches='tight', dpi=200)
+            plt.savefig(f"{self.outdir}/{self.fig_count}.png", bbox_inches='tight', dpi=100)
             self.fig_count += 1
         
         plt.close()

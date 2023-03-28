@@ -7,10 +7,9 @@ from typing import List
 
 from gym.agent import Agent
 
-from utils.common import LOSS_OF_SEPARATION_THRESH
-from utils.trajair_utils import direction_goal_detect
+from utils.common import LOSS_OF_SEPARATION_THRESH, direction_goal_detect, compute_tcpa
 
-def split_agents(self, agents: List[Agent]) -> None:
+def split_agents(self, agents: List[Agent], current_agent: int, time_steps: int = 200) -> None:
     """ Splits playing agents """
     active_agents = self.active_agents(agents)
     assert active_agents >= 1, f"No active agents. Can't split them!"
@@ -26,9 +25,21 @@ def split_agents(self, agents: List[Agent]) -> None:
         for agent in agents:
             if not agent.done:
                 self.playing.append(agent.id)
-    # TODO: handle more than 3 agents
+    
     else:
-        raise NotImplementedError(f"No suport for num-agents > 2")
+        # TODO: make this efficient
+        state_i = agents[current_agent].trajectory[-1].numpy()
+
+        other_agent = None
+        min_tcpa = float('inf')
+        for agent in agents:
+            if not agent.done and agent.id != current_agent:
+                tcpa = compute_tcpa(state_i, agent.trajectory[-1].numpy())
+                if tcpa < min_tcpa:
+                    min_tcpa = tcpa
+                    other_agent = agent.id
+
+        self.playing = [current_agent, other_agent]
     
 def take_turn(self, current_agent: int) -> int:
     if len(self.playing) > 1:
@@ -55,7 +66,7 @@ def next_agent(self, agents: List[Agent], current_agent: int) -> int:
     while True:
         if not agents[next_agent].done:
             return next_agent
-        next_agent += 1
+        next_agent = next_agent + 1 if (next_agent + 1) < self.num_init_agents else 0
 
 def is_multi_valid(self, agents: List[Agent]):
     """ Checks if the playing agents are in collision. 
@@ -84,18 +95,37 @@ def is_multi_valid(self, agents: List[Agent]):
             return (agent_start, agent)
     return None, None
 
-def game_done(self, agents: List[Agent], dir_start: int = 3) -> int:
+def check_valid(self, agents: List[Agent], dir_start: int = 3) -> List[Agent]:
+    
+    # check if two agents are in collision 
+    multi_valid = self.is_multi_valid(agents)
+    if multi_valid[0] is not None and multi_valid[1] is not None:
+        i, j = multi_valid
+        agents[i].update(done=True, success=0, collision=1, offtrack=0)             
+        agents[j].update(done=True, success=0, collision=1, offtrack=0)
+        self.logger.info(f"Agents {i} and {j} are in collision; exiting for them!")
+
+    # check if agents are done
     for agent in agents:
         if agent.done:
             continue
         
-        state = agent.state
-        goal = agent.goal_state
+        state, goal = agent.trajectory[-1], agent.goal_state
+        
         for i in range(dir_start, state.shape[0]):
             si, sim1 = state[i], state[i-1]
             dir_s = direction_goal_detect(si, sim1)
+
+            # the agent reached its goal
             if (dir_s == goal).all():
-                return agent.id
+                agent.update(done=True, success=1, collision=0, offtrack=0)
+                self.logger.info(f"Agent {agent.id} reached goal!")
+                break
+            
+            # TODO: handle offrack cases
             if dir_s.any():
-                return -1
-    return None
+                agent.update(done=True, success=0, collision=0, offtrack=1)
+                self.logger.info(f"Agent {agent.id} went offtrack; exiting for it!")
+                break
+                
+    return agents
