@@ -106,7 +106,7 @@ are the results from our self-play experiments.
 
 | Num Agents | Algorithms  | Success Rate  | Max Steps Reached  | Loss-Of-Separation  | Offtrack  | Reference Error |
 |:-----:|:----------:|:----:|:----:|:----:|:----:|:----:|
-| 2 | Baseline    | 0.725 | 0.275 | 0.000 | 0.000 | 27.51 |
+| 2 | Baseline    | 0.710 | 0.250 | 0.000 | 0.050 | 19.34 |
 |   | SoRTS       | 0.950 | 0.040 | 0.000 | 0.010 | 14.21 |
 
 <table align="center">

@@ -9,7 +9,7 @@
     "seed": 4234, 
     
     "game": {
-        "num_episodes": 50, 
+        "num_episodes": 10, 
         "max_steps": 100,
         "num_agents": 2,
         "deterministic": true

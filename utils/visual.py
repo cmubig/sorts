@@ -126,7 +126,7 @@ class Visual:
     def save(self, num_episode: int) -> None:
         self.fig_count = 0
         imgs = natsorted(glob.glob(f"{self.outdir}/*.png"))
-        with imageio.get_writer(f"{self.outdir}/ep-{num_episode}.gif", mode='I', duration=0.5) as writer:
+        with imageio.get_writer(f"{self.outdir}/ep-{num_episode}.gif", mode='I', duration=0.2) as writer:
             for img in imgs:
                 writer.append_data(imageio.imread(img))
                 os.remove(img)

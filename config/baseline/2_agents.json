@@ -6,10 +6,10 @@
     "gpu": true,
     "gpu_id": 0,
 
-    "seed": 1, 
+    "seed": 4234, 
     
     "game": {
-        "num_episodes": 100, 
+        "num_episodes": 50, 
         "max_steps": 100,
         "num_agents": 2,
         "deterministic": true
@@ -17,7 +17,7 @@
 
     "planner_policy": {
         "type": "baseline",
-        "lmbd": 0.4
+        "lmbd": 0.3
     },
 
     "social_policy": {

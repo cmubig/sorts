@@ -6,7 +6,7 @@
     "gpu": true,
     "gpu_id": 0,
 
-    "seed": 1, 
+    "seed": 4234, 
     
     "game": {
         "num_episodes": 100, 

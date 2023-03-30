@@ -13,14 +13,11 @@ def split_agents(self, agents: List[Agent], current_agent: int, time_steps: int 
     """ Splits playing agents """
     active_agents = self.active_agents(agents)
     assert active_agents >= 1, f"No active agents. Can't split them!"
-    self.playing = []
 
-    # TODO: make this efficient
     if active_agents == 1 or active_agents == 2:
-        for agent in agents:
-            if not agent.done:
-                self.playing.append(agent.id)
-    
+        self.playing = [agent.id for agent in agents if not agent.done]
+        
+    # TODO: make this efficient
     else:
         state_i = agents[current_agent].trajectory[-1].numpy()
 
