@@ -1,23 +1,23 @@
 {
+    "setting": "multiagent",
     "log_file": "output.log",
     "out_dir": "./out",
     "sub_dirs": ["plots", "traj"],
     "gpu": true,
     "gpu_id": 0,
 
-    "seed": 1, 
+    "seed": 4234, 
     
     "game": {
-        "num_episodes": 100, 
-        "max_steps": 60,
+        "num_episodes": 50, 
+        "max_steps": 100,
         "num_agents": 2,
         "deterministic": true
     },
 
     "planner_policy": {
         "type": "mcts",
-        "setting": "multiagent",
-        "c_uct": 1,
+        "c_uct": 2,
         "h_uct": 5,
         "search": "ts",
         "num_ts": 50,
@@ -42,8 +42,8 @@
             "LossOfSeparation_ClosestDistance",
             "LossOfSeparation_Frames"
         ],
-        "collision_threshold": 0.5,
-        "loss_of_separation_threshold": 0.5
+        "collision_threshold": 0.3,
+        "loss_of_separation_threshold": 0.3
     },
 
     "data": {

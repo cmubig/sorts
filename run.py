@@ -13,7 +13,7 @@ def run(exp: str) -> None:
     # load the configuration files
     config = json.load(open(exp))
 
-    play = config['planner_policy']['setting']
+    play = config['setting']
     if play == "multiagent":
         from self_play.multi_agent import MultiAgent as SelfPlay
     else:

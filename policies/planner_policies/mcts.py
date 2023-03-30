@@ -47,7 +47,7 @@ class MCTS(Planner):
         if self.config.MAIN.gpu and torch.cuda.is_available():
             self.device = torch.device(f'cuda:{self.config.MAIN.gpu_id}')
 
-        elif self.config.SOCIAL_POLICY.type == "sprnn":
+        if self.config.SOCIAL_POLICY.type == "sprnn":
             from policies.social_policies.sprnn_predictor import SprnnPolicy
             self.soc_policy = SprnnPolicy(self.config, self.logger, self.device)
         else: 

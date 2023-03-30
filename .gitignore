@@ -5,6 +5,7 @@ __pycache__/
 
 data/dataset*
 out/*
+save/*
 
 # C extensions
 *.so

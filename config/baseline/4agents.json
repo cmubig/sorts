@@ -1,4 +1,5 @@
 {
+    "setting": "multiagent",
     "log_file": "output.log",
     "out_dir": "./out",
     "sub_dirs": ["plots", "traj"],
@@ -16,7 +17,6 @@
 
     "planner_policy": {
         "type": "baseline",
-        "setting": "multiagent",
         "lmbd": 0.4
     },
 

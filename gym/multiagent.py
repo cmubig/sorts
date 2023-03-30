@@ -15,19 +15,13 @@ def split_agents(self, agents: List[Agent], current_agent: int, time_steps: int 
     assert active_agents >= 1, f"No active agents. Can't split them!"
     self.playing = []
 
-    if active_agents == 1:
-        for agent in agents:
-            if not agent.done:
-                self.playing.append(agent.id)
-                return
-            
-    elif active_agents == 2:
+    # TODO: make this efficient
+    if active_agents == 1 or active_agents == 2:
         for agent in agents:
             if not agent.done:
                 self.playing.append(agent.id)
     
     else:
-        # TODO: make this efficient
         state_i = agents[current_agent].trajectory[-1].numpy()
 
         other_agent = None
@@ -47,10 +41,21 @@ def take_turn(self, current_agent: int) -> int:
     return self.playing[0]
 
 def active_agents(self, agents: List[Agent]) -> int:
-    num_agents = 0
-    for agent in agents:
-        num_agents += int(not agent.done)
-    return num_agents
+    """ Returns the number of active agents in the enviornment. 
+    
+    Inputs
+    ------
+    agents[List[Agent]]: List of all agents that were spawned in the environment. 
+
+    Outputs
+    -------
+    active_agents[int]: Number of active agents within the input list. 
+    """
+    return sum([int(not agent.done) for agent in agents])
+    # num_agents = 0
+    # for agent in agents:
+    #     num_agents += int(not agent.done)
+    # return num_agents
 
 def next_agent(self, agents: List[Agent], current_agent: int) -> int:
     active_agents = self.active_agents(agents)

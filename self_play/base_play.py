@@ -64,11 +64,26 @@ class SelfPlay:
                 * Initialize gym, search policy and relevant member parameters. 
         """
         # create the experiment tag name
-        exp_name = "exp-{}-{}-{}-{}".format(
+        exp_name = "policy-{}-{}_num-agents-{}_num-episodes-{}".format(
             self.config.PLANNER_POLICY.type, 
             self.config.SOCIAL_POLICY.type, 
             self.config.GAME.num_agents, 
-            self.config.GAME.num_episodes)
+            self.config.GAME.num_episodes,
+        )
+        # if self.config.PLANNER_POLICY.type == "mcts":
+        #     exp_name = "PLANNER-{}-{}-{}-{}_SOCIAL-{}-{}_GAME-{}-{}-{}".format(
+        #         self.config.PLANNER_POLICY.type, 
+        #         self.config.PLANNER_POLICY.c_uct,
+        #         self.config.PLANNER_POLICY.h_uct,
+        #         self.config.PLANNER_POLICY.num_ts,
+
+        #         self.config.SOCIAL_POLICY.type, 
+        #         self.config.SOCIAL_POLICY.num_predictions,
+
+        #         self.config.GAME.num_agents, 
+        #         self.config.GAME.num_episodes,
+        #         self.config.GAME.max_steps,
+        #     )
         
         # output directory and logging file
         self.out = os.path.join(self.config.MAIN.out_dir, self.config.DATA.dataset_name, exp_name)
@@ -88,11 +103,12 @@ class SelfPlay:
         
         # supported planners
         if self.config.PLANNER_POLICY.type == "mcts":
-            from policies.planner_policies.mcts import MCTS as Planner
+            from policies.planner_policies.mcts import MCTS as Planner 
         elif self.config.PLANNER_POLICY.type == "baseline":
             from policies.planner_policies.baseline import Baseline as Planner
         else:
             raise NotImplementedError(f"Policy {self.config.PLANNER_POLICY.type} not supported!")
+        
         self.policy = Planner(self.config, self.gym, self.logger)
     
         # initialize base parameters
@@ -134,13 +150,9 @@ class SelfPlay:
             # run episode
             steps = self.run_episode(episode)
 
-            # aggregate metrics from episode
-            self.aggregate_metrics(steps)
-            metrics = ''
-            for m, s in self.metrics.items():
-                metrics += f'{m}={s[-1]} '
-            self.logger.info(f"Episode [{episode+1}/{self.num_episodes}] - Metrics: {metrics}")
-            
+            # aggregate episode metrics
+            self.aggregate_metrics(steps, episode)
+                
         # all episodes are done; save metrics
         for m, s in self.metrics.items():
             self.metrics[m] = float(round(np.asarray(s).mean(), 4))
@@ -152,7 +164,7 @@ class SelfPlay:
         total_time = time.time() - start_time
         self.logger.info(f"Done! Time: {total_time} (s)")
             
-    def aggregate_metrics(self, step: int) -> None:     
+    def aggregate_metrics(self, step: int, episode: int) -> None:     
         """ Collect episode metrics. 
          
         Inputs
@@ -165,7 +177,7 @@ class SelfPlay:
         trajectories = []
         for agent in self.agents:
             if 'MaxStepsReached' in self.metric_list:
-                self.metrics['MaxStepsReached'].append(int(max_steps_reached and (not agent.done)))
+                self.metrics['MaxStepsReached'].append(int(max_steps_reached and (not agent.success)))
 
             if 'Steps' in self.metric_list:
                 self.metrics['Steps'].append(agent.num_steps)
@@ -193,6 +205,14 @@ class SelfPlay:
             
             self.metrics['LossOfSeparation_Frames'].append(frames)
             self.metrics['LossOfSeparation_ClosestDistance'].append(closest_distance)
+
+        metrics = ''
+        accum_metrics = ''
+        for m, s in self.metrics.items():
+            metrics += f'{m}={s[-1]} '
+            accum_metrics += f'{m}={round(np.asarray(s).mean(), 4)} '
+        self.logger.info(f"Episode [{episode+1}/{self.num_episodes}] - Metrics: {metrics}")
+        self.logger.info(f"Accumulated Metrics: {accum_metrics}")
     
     # ----------------------------------------------------------------------------------------------
     # Methods below need to be implemented by the child class. 

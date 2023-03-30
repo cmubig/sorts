@@ -106,12 +106,8 @@ are the results from our self-play experiments.
 
 | Num Agents | Algorithms  | Success Rate  | Max Steps Reached  | Loss-Of-Separation  | Offtrack  | Reference Error |
 |:-----:|:----------:|:----:|:----:|:----:|:----:|:----:|
-| 2 | Baseline    | 0.705  | 0.265 | 0.0 | 0.030 | 19.755 |
-|   | SoRTS       |  |  | |  |  |
-| 3 | Baseline    | 0.693 | 0.130 | 0.167 | 0.010 | 17.586  |
-|   | SoRTS       |  |  | |  |  |
-| 4 | Baseline    |  |  | |  |  |
-|   | SoRTS       |  |  | |  |  |
+| 2 | Baseline    | 0.725 | 0.275 | 0.000 | 0.000 | 27.51 |
+|   | SoRTS       | 0.950 | 0.040 | 0.000 | 0.010 | 14.21 |
 
 <table align="center">
   <tr>
@@ -119,8 +115,8 @@ are the results from our self-play experiments.
     <td>SoRTS</td>
   </tr>
   <tr>
-    <td><img src="assets/baseline_2agents.gif" width=250 ></td>
-    <td><img src="assets/sorts_2agents.gif" width=250 ></td>
+    <td><img src="assets/baseline_2agents.gif" width=300 ></td>
+    <td><img src="assets/sorts_2agents.gif" width=300 ></td>
   </tr>
  </table>
 

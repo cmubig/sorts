@@ -1,22 +1,22 @@
 {
+    "setting": "multiagent",
     "log_file": "output.log",
     "out_dir": "./out",
     "sub_dirs": ["plots", "traj"],
     "gpu": true,
     "gpu_id": 0,
 
-    "seed": 1, 
+    "seed": 4234, 
     
     "game": {
-        "num_episodes": 10, 
-        "max_steps": 50,
+        "num_episodes": 50, 
+        "max_steps": 150,
         "num_agents": 4,
         "deterministic": true
     },
 
     "planner_policy": {
         "type": "mcts",
-        "setting": "multiagent",
         "c_uct": 1,
         "h_uct": 5,
         "search": "ts",
