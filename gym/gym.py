@@ -33,10 +33,10 @@ class Gym:
         self.logger = logger
         self.outdir = outdir
         
-        self.visual = None
-        if self.config.VISUALIZATION.visualize:
-            outdir = os.path.join(self.outdir, "vis")
-            self.visual = Visual(outdir)
+        # self.visual = None
+        # if self.config.VISUALIZATION.visualize:
+        outdir = os.path.join(self.outdir, "vis")
+        self.visual = Visual(outdir)
         
         self.dir_start = 3
     
@@ -57,6 +57,7 @@ class Gym:
         self.hh = []
 
         self.num_init_agents = self.config.GAME.num_agents
+        # self.active_agents = self.num_init_agents
         self.playing = []
 
         super().__init__()
@@ -77,6 +78,7 @@ class Gym:
     def reset(self) -> None:
         """ Reset environment and visuals. """
         self.hh = []
+        # self.active_agents = self.num_init_agents
         self.visual.reset()
 
     def get_state_hash(self, agents: List[Agent], sim: bool = True) -> str:

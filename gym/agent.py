@@ -3,6 +3,7 @@
 # @brief:   Implements the Agent class. It contains basic attributes defining the agent's state. 
 # --------------------------------------------------------------------------------------------------
 import numpy as np 
+import torch
 
 from typing import List
 
@@ -29,6 +30,7 @@ class Agent:
         self._success = 0
         self._collision = 0
         self._offtrack = 0
+        self._timeout = 0
 
     # ----------------------------------------------------------------------------------------------
     # Members
@@ -44,6 +46,10 @@ class Agent:
     @property
     def offtrack(self) -> int:
         return self._offtrack
+    
+    @property
+    def timeout(self) -> int:
+        return self._timeout
 
     @property
     def success(self) -> bool:
@@ -100,11 +106,15 @@ class Agent:
     def set_done(self, done: bool) -> None:
         self._done = done
 
-    def update(self, done: bool, success: int, collision: int, offtrack: int) -> None:
+    def update(
+        self, done: bool = False, success: int = 0, collision: int = 0, offtrack: int = 0, 
+        timeout: int = 0
+    ) -> None:
         self._done = done
         self._success = success
         self._collision = collision
         self._offtrack = offtrack
+        self._timeout = timeout
 
     def add_tree(self) -> None:
         self._trees.append(self._tree)
@@ -130,3 +140,7 @@ class Agent:
         y = int(state[-1, 1] * scale)
         z = int(state[-1, 2] * scale)
         return x, y, z
+    
+    def get_trajectory_np(self) -> np.array:
+        trajectory = [s[:-1] for s in self.trajectory[:-1]] + [self.trajectory[-1]]
+        return torch.cat(trajectory).numpy()

@@ -9,10 +9,10 @@ from math import sqrt
 from typing import List
 
 from gym.gym import Gym, Agent
-from policies.planner_policies.planner import Planner
+from policies.planner_policies.base_planner import BasePlanner
 from utils.common import Config, EPS
 
-class MCTS(Planner):
+class MCTS(BasePlanner):
     """ Monte Carlo Tree Search algorithm. """
     def __init__(self, config: Config, gym: Gym, logger) -> None:
         """ Intializes MCTS. 
@@ -48,7 +48,7 @@ class MCTS(Planner):
             self.device = torch.device(f'cuda:{self.config.MAIN.gpu_id}')
 
         if self.config.SOCIAL_POLICY.type == "sprnn":
-            from policies.social_policies.sprnn_predictor import SprnnPolicy
+            from policies.social_policies.sprnn import SprnnPolicy
             self.soc_policy = SprnnPolicy(self.config, self.logger, self.device)
         else: 
             raise NotImplementedError(f"Policy {self.config.SOCIAL_POLICY.type} not implemented!")
@@ -96,19 +96,16 @@ class MCTS(Planner):
         if self.config.PLANNER_POLICY.search == "time":
             while (time.time() - start_time) < self.config.PLANNER_POLICY.max_time:
                 self.search(agents, current_agent=current_agent)
-                
-                # reset state and tree for next expansion ?
-                agents[current_agent].set_state(agents[current_agent].trajectory[-1])
-                agents[current_agent].add_tree()
-
         # tree expansions-based search
         else:
             for t in range(self.config.PLANNER_POLICY.num_ts):
                 self.search(agents, current_agent=current_agent)
-                
-                # reset state and tree for next expansion ?
-                agents[current_agent].set_state(agents[current_agent].trajectory[-1])
-                agents[current_agent].add_tree()
+                # TODO: reset state and tree for next expansion ?
+                for agent in agents:
+                    agent.set_state(agent.trajectory[-1])
+
+                # agents[current_agent].set_state(agents[current_agent].trajectory[-1])
+                # agents[current_agent].add_tree()
                 
         state = self.gym.get_state_hash(agents=agents, sim=False)
         
@@ -118,7 +115,8 @@ class MCTS(Planner):
         
         counts_sum = float(sum(counts))
         if int(counts_sum) != 0:
-            return [x / counts_sum for x in counts]
+            # return [x / counts_sum for x in counts]
+            return np.asarray(counts) / counts_sum
         
         if self.config.VISUALIZATION.visualize:
             self.gym.show_world(agents, show_tree=True)
@@ -165,10 +163,7 @@ class MCTS(Planner):
         
         current_best = -float('inf')
         best_action = -1
-
-        reference_trajectory = agents[current_agent].reference_trajectory
-
-        heuristic = self.gym.get_heuristic_downwind(S, reference_trajectory)
+        heuristic = self.gym.get_heuristic_downwind(S, agents[current_agent].reference_trajectory)
         
         S_valid = self.gym.is_state_space_valid(S, agents, current_agent)
 

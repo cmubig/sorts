@@ -47,7 +47,7 @@ class MultiAgent(SelfPlay):
             # compute action probabilities and execute next action
             pi = self.policy.compute_action_probabilities(
                 agents=self.agents, current_agent=current_agent)
-    
+
             if self.config.GAME.deterministic:
                 action = np.argmax(pi)
             else: # sample
@@ -66,9 +66,12 @@ class MultiAgent(SelfPlay):
             # next agent
             current_agent = self.gym.next_agent(self.agents, current_agent)
 
+        for agent in self.agents:
+            if not agent.done and step >= self.config.GAME.max_steps:
+                agent.update(done=True, timeout=1)
+                self.logger.info(f"Agent {agent.id} timed-out!")
+                
         # convert visualizations into gif
         if self.config.VISUALIZATION.visualize:
             self.gym.show_world(self.agents)
             self.gym.save(num_episode=num_episode)
-
-        return step

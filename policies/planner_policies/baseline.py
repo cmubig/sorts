@@ -9,10 +9,10 @@ import torch
 from typing import List
 
 from gym.gym import Gym, Agent
-from policies.planner_policies.planner import Planner
+from policies.planner_policies.base_planner import BasePlanner
 from utils.common import Config
 
-class Baseline(Planner):
+class Baseline(BasePlanner):
     """ Baseline planning algorithm. """
     def __init__(self, config: Config, gym: Gym, logger) -> None:
         """ Intializes the baseline. 
@@ -42,7 +42,7 @@ class Baseline(Planner):
             self.device = torch.device(f'cuda:{self.config.MAIN.gpu_id}')
 
         if self.config.SOCIAL_POLICY.type == "sprnn":
-            from policies.social_policies.sprnn_predictor import SprnnPolicy
+            from policies.social_policies.sprnn import SprnnPolicy
             self.soc_policy = SprnnPolicy(self.config, self.logger, self.device)
         else: 
             raise NotImplementedError(f"Policy {self.config.SOCIAL_POLICY.type} not implemented!")
@@ -68,8 +68,7 @@ class Baseline(Planner):
         pi_intent = self.soc_policy.compute_social_action(agents, S, current_agent)
 
         # compute action distribution from reference heuristic
-        reference_trajectory = agents[current_agent].reference_trajectory
-        pi_reference = self.gym.get_heuristic_downwind(S, reference_trajectory)
+        pi_reference = self.gym.get_heuristic_downwind(S, agents[current_agent].reference_trajectory)
 
         # compute final action distribution by balancing the social and reference actions
         return self.lmbd * pi_intent + (1 - self.lmbd) * pi_reference

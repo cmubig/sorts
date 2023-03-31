@@ -7,6 +7,7 @@ import torch
 
 from typing import List
 from natsort import natsorted
+from PIL import Image
 
 class Visual:
     def __init__(self, outdir, full_screen: bool = False, background: str = 'white') -> None:
@@ -126,7 +127,7 @@ class Visual:
     def save(self, num_episode: int) -> None:
         self.fig_count = 0
         imgs = natsorted(glob.glob(f"{self.outdir}/*.png"))
-        with imageio.get_writer(f"{self.outdir}/ep-{num_episode}.gif", mode='I', duration=0.2) as writer:
+        with imageio.get_writer(f"{self.outdir}/ep-{num_episode}.gif", mode='I', duration=0.1) as writer:
             for img in imgs:
                 writer.append_data(imageio.imread(img))
                 os.remove(img)

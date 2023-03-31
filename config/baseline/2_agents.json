@@ -9,7 +9,7 @@
     "seed": 4234, 
     
     "game": {
-        "num_episodes": 50, 
+        "num_episodes": 100, 
         "max_steps": 100,
         "num_agents": 2,
         "deterministic": true
@@ -17,7 +17,7 @@
 
     "planner_policy": {
         "type": "baseline",
-        "lmbd": 0.3
+        "lmbd": 0.4
     },
 
     "social_policy": {
@@ -25,21 +25,6 @@
         "num_predictions": 10,
         "model_config_path": "./data/sprnn/config.json",
         "model_path": "./data/sprnn/model.pth"
-    },
-
-    "metrics": {
-        "list": [
-            "Steps", 
-            "MaxStepsReached", 
-            "Success", 
-            "Offtrack",
-            "ReferenceError", 
-            "LossOfSeparation_Collision",
-            "LossOfSeparation_ClosestDistance",
-            "LossOfSeparation_Frames"
-        ],
-        "collision_threshold": 0.5,
-        "loss_of_separation_threshold": 0.5
     },
 
     "data": {

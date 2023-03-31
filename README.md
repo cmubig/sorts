@@ -90,13 +90,13 @@ the social policy, the environment, visualization, etc.
 The configuration files to run SoRTS can be found in ```config/sorts```. For example, 
 to run the two-agent experiment, run:
 ```
-python run.py --exp config/sorts/2agent.json
+python run.py --exp config/sorts/2_agents.json
 ```
 
 The configuration files to run the baseline can be found in ```config/baseline```. For example, 
 to run the two-agent experiment, run:
 ```
-python run.py --exp config/baseline/2agent.json
+python run.py --exp config/baseline/2_agents.json
 ```
 
 ## Results
@@ -104,10 +104,14 @@ python run.py --exp config/baseline/2agent.json
 This repo provides a socially-aware baseline and SoRTS, a socially-aware MCTS-based algorithm. Here
 are the results from our self-play experiments. 
 
-| Num Agents | Algorithms  | Success Rate  | Max Steps Reached  | Loss-Of-Separation  | Offtrack  | Reference Error |
-|:-----:|:----------:|:----:|:----:|:----:|:----:|:----:|
-| 2 | Baseline    | 0.710 | 0.250 | 0.000 | 0.050 | 19.34 |
-|   | SoRTS       | 0.950 | 0.040 | 0.000 | 0.010 | 14.21 |
+| Num Agents | Algorithms  | Success Rate  | Timeout  | Loss-Of-Separation  | Offtrack  | Reference Error |
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| 2 | Baseline | 0.760 | 0.190 | 0.000 | 0.050 | 19.34 |
+|   | SoRTS    | 0.950 | 0.040 | 0.000 | 0.010 | 13.69 |
+| 3 | Baseline | 0.747 | 0.218 | 0.000 | 0.067 | 19.34 |
+|   | SoRTS    | 0.943 | 0.030 | 0.000 | 0.027 | 15.68 |
+| 4 | Baseline | 0.483 | 0.510 | 0.000 | 0.007 | 19.34 |  
+|   | SoRTS    | 0.932 | 0.055 | 0.000 | 0.013 | 15.68 |
 
 <table align="center">
   <tr>
@@ -117,6 +121,10 @@ are the results from our self-play experiments.
   <tr>
     <td><img src="assets/baseline_2agents.gif" width=300 ></td>
     <td><img src="assets/sorts_2agents.gif" width=300 ></td>
+  </tr>
+  <tr>
+    <td><img src="assets/baseline_4agents.gif" width=300 ></td>
+    <td><img src="assets/sorts_4agents.gif" width=300 ></td>
   </tr>
  </table>
 

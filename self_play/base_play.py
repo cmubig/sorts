@@ -12,7 +12,8 @@ import torch
 from tqdm import tqdm
 
 from gym.gym import Gym
-from utils.common import Config, FORMAT, compute_reference_error, compute_loss_of_separation
+from utils.common import (
+    Config, FORMAT, LOSS_OF_SEPARATION_THRESH, compute_reference_error, compute_loss_of_separation)
         
 class SelfPlay:
     """ Base class for running self-play experiments. """
@@ -29,7 +30,7 @@ class SelfPlay:
         self.supported_metrics = [
             'Success', 
             'Steps', 
-            'MaxStepsReached', 
+            'Timeout',
             'Offtrack',
             'ReferenceError', 
             'LossOfSeparation_Collision',
@@ -70,21 +71,7 @@ class SelfPlay:
             self.config.GAME.num_agents, 
             self.config.GAME.num_episodes,
         )
-        # if self.config.PLANNER_POLICY.type == "mcts":
-        #     exp_name = "PLANNER-{}-{}-{}-{}_SOCIAL-{}-{}_GAME-{}-{}-{}".format(
-        #         self.config.PLANNER_POLICY.type, 
-        #         self.config.PLANNER_POLICY.c_uct,
-        #         self.config.PLANNER_POLICY.h_uct,
-        #         self.config.PLANNER_POLICY.num_ts,
 
-        #         self.config.SOCIAL_POLICY.type, 
-        #         self.config.SOCIAL_POLICY.num_predictions,
-
-        #         self.config.GAME.num_agents, 
-        #         self.config.GAME.num_episodes,
-        #         self.config.GAME.max_steps,
-        #     )
-        
         # output directory and logging file
         self.out = os.path.join(self.config.MAIN.out_dir, self.config.DATA.dataset_name, exp_name)
         if not os.path.exists(self.out):
@@ -119,12 +106,9 @@ class SelfPlay:
         
         # metrics cache 
         self.metrics = {}
-        self.metric_list = self.config.METRICS.list
-        for m in self.metric_list:
-            assert m in self.supported_metrics, f"Metric {m} not in {self.supported_metrics}"
+        for m in self.supported_metrics:
             self.metrics[m] = []
-        self.logger.info(f"{self.name} will consider metrics: {self.metric_list}.")
-        
+    
         # random seed
         self.seed = self.config.MAIN.seed
         random.seed(self.seed)
@@ -148,10 +132,10 @@ class SelfPlay:
             self.policy.reset()
 
             # run episode
-            steps = self.run_episode(episode)
+            self.run_episode(episode)
 
             # aggregate episode metrics
-            self.aggregate_metrics(steps, episode)
+            self.aggregate_metrics(episode)
                 
         # all episodes are done; save metrics
         for m, s in self.metrics.items():
@@ -164,47 +148,32 @@ class SelfPlay:
         total_time = time.time() - start_time
         self.logger.info(f"Done! Time: {total_time} (s)")
             
-    def aggregate_metrics(self, step: int, episode: int) -> None:     
+    def aggregate_metrics(self, episode: int) -> None:     
         """ Collect episode metrics. 
          
         Inputs
         ------
             steps[int]: number of steps the episode ran for. 
         """
-        max_steps_reached = True if step > self.config.GAME.max_steps else False
-
         # compute metrics
         trajectories = []
         for agent in self.agents:
-            if 'MaxStepsReached' in self.metric_list:
-                self.metrics['MaxStepsReached'].append(int(max_steps_reached and (not agent.success)))
-
-            if 'Steps' in self.metric_list:
-                self.metrics['Steps'].append(agent.num_steps)
+            self.metrics['Timeout'].append(agent.timeout)
+            self.metrics['Steps'].append(agent.num_steps)
+            self.metrics['Success'].append(agent.success)   
+            self.metrics['Offtrack'].append(agent.offtrack)   
+            self.metrics['LossOfSeparation_Collision'].append(agent.collision)
             
-            if 'Success' in self.metric_list:
-                self.metrics['Success'].append(agent.success)   
-            
-            if 'Offtrack' in self.metric_list:
-                self.metrics['Offtrack'].append(agent.offtrack)   
-            
-            if 'LossOfSeparation_Collision' in self.metric_list:
-                self.metrics['LossOfSeparation_Collision'].append(agent.collision)
-
-            trajectory = [s[:-1] for s in agent.trajectory[:-1]] + [agent.trajectory[-1]]
-            trajectory = torch.cat(trajectory).numpy()
+            trajectory = agent.get_trajectory_np()
             trajectories.append(trajectory)
+            re = compute_reference_error(trajectory, agent.reference_trajectory)
+            self.metrics['ReferenceError'].append(re)
 
-            if 'ReferenceError' in self.metric_list:
-                re = compute_reference_error(trajectory, agent.reference_trajectory)
-                self.metrics['ReferenceError'].append(re)
-
-        if 'LossOfSeparation_Frames' in self.metric_list:
-            frames, closest_distance = compute_loss_of_separation(
-                trajectories, self.config.METRICS.loss_of_separation_threshold)
-            
-            self.metrics['LossOfSeparation_Frames'].append(frames)
-            self.metrics['LossOfSeparation_ClosestDistance'].append(closest_distance)
+        frames, closest_distance = compute_loss_of_separation(
+            trajectories, LOSS_OF_SEPARATION_THRESH)
+        
+        self.metrics['LossOfSeparation_Frames'].append(frames)
+        self.metrics['LossOfSeparation_ClosestDistance'].append(closest_distance)
 
         metrics = ''
         accum_metrics = ''
