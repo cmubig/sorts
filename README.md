@@ -75,7 +75,7 @@ Our code expects the dataset to be located within the ```data/dataset``` folder,
 
 Our work uses an intent prediction algorithm to guide the tree search of the MCTS-based planner. 
 We leverage the Social-Patternn (sprnn) algorithm whose configuration files and model checkpoint are located
-within the ```data/sprnn``` folder. For more details about sprnn, here's the corresponding [paper](https://arxiv.org/pdf/2209.05649.pdf). The corresponding code is cloned and used as a submodule in ```game/social_policies```. 
+within the ```data/sprnn``` folder. For more details about sprnn, here's the corresponding [paper](https://arxiv.org/pdf/2209.05649.pdf). The corresponding code is cloned and used as a submodule in ```policies/social_policies```. 
 
 ### Other files
 
